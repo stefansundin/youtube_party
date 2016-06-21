@@ -1,0 +1,2 @@
+#!/bin/bash -ex
+bundle exec irb -r ./youtube_party
