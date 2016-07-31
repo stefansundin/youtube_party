@@ -60,7 +60,12 @@ class YoutubeParty
     info = get_video_info(video_id, sts)
     video_url = select_best(info["adaptive_fmts"], "video/mp4")["url"]
     audio_url = select_best(info["adaptive_fmts"], "audio/mp4")["url"]
-    "ffmpeg -i \"#{video_url}\" -i \"#{audio_url}\" -codec copy \"#{info["title"].gsub(/[:*?"<>|]/,"")}.mp4\""
+    metadata = {
+      title: info["title"],
+      comment: "https://www.youtube.com/watch?v=#{video_id}\nUploaded by #{info["author"]}\\nhttps://www.youtube.com/channel/#{info["ucid"]}\nDownloaded on #{Time.now.strftime("%F")}"
+    }.map { |k,v| "-metadata #{k}=$'#{v.gsub("'","").gsub("\n","\\n")}'" }.join(" ")
+    fn = info["title"].gsub(/[:*?"<>|]/,"") + ".mp4"
+    "ffmpeg -i \"#{video_url}\" -i \"#{audio_url}\" -codec copy #{metadata} \"#{fn}\""
   end
 
   def self.get_oembed_info(video_id)
