@@ -5,8 +5,10 @@
 # Get sig function: https://github.com/rg3/youtube-dl/blob/466a6145372aa70f44a9b39c7fdeb05301a5485a/youtube_dl/extractor/youtube.py#L876
 
 require "uri"
+require "json"
 require "httparty"
 require "awesome_print"
+require "./decipherer"
 
 module URI
   def to_h
@@ -32,6 +34,11 @@ class YoutubeParty
     r = get(url)
     data = Hash[URI.decode_www_form(r.body)]
     return data if r["status"] == "fail"
+
+    webpage_url = "https://www.youtube.com/watch?v=#{video_id}&gl=US&hl=en&has_verified=1&bpctr=9999999999"
+    player_url = extract_player_url(webpage_url)
+
+    @decipher = Decipherer.new(player_url)
 
     data.keys.each do |k|
       if %w[keywords fmt_list watermark].include?(k)
@@ -95,11 +102,26 @@ class YoutubeParty
       end
       # h["url_parts"] = URI.parse(h["url"]).to_h
       if h["s"]
-        sig = apply_cipher(h["s"])
+        sig = @decipher.decrypt(h["s"])
         # h["decoded_signature"] = sig
         h["url"] += "&signature=#{sig}"
       end
       h
+    end
+  end
+
+  def self.extract_player_url(webpage_url)
+    video_webpage = get(webpage_url)
+    assets_re  = /"assets":.+?"js":\s*(?<url>"[^"]+")/
+    player_url = video_webpage.match(assets_re)["url"]
+    player_url = JSON.parse("[#{player_url}]")[0]
+
+    raise "can't find player url" if player_url.empty?
+
+    case player_url
+      when /^\/\//				then "https:#{player_url}"
+      when /^https?:\/\// then player_url
+      else "https://www.youtube.com#{player_url}"
     end
   end
 
