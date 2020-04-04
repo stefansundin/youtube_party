@@ -84,11 +84,19 @@ class YoutubeParty
   # private
 
   def self.select_best(streams, type)
-    streams.select do |fmt|
+    s=streams.select do |fmt|
       fmt["type"].start_with?(type)
     end.sort_by do |fmt|
       -fmt["bitrate"]
-    end[0]
+    end
+    puts "Select stream:"
+    s.each.with_index do |st,i|
+      puts "#{i}: #{st}"
+    end
+    i = gets.chomp.to_i
+    s = s[i]
+    puts "selected #{s}"
+    s
   end
 
   def self.parse_urlmap(str)

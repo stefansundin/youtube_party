@@ -1,0 +1,3 @@
+#!/bin/bash -ex
+bundle exec ruby -r ./youtube_party -e "puts YoutubeParty.get_ffmpeg_cmd('$1')"
+
